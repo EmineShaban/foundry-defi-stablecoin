@@ -17,14 +17,14 @@ contract HelperConfig is Script {
     uint8 public constant DECIMALS = 8;
     int256 public constant ETH_USD_PRICE = 2000e8;
     int256 public constant BTC_USD_PRICE = 1000e8;
-    uint256 public DEFOULT_ANVIL_KEY = 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80;
-    NetworkConfig public activNetworkCofig;
+    uint256 public DEFAULT_ANVIL_KEY = 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80;
+    NetworkConfig public activeNetworkCofig;
 
     constructor() {
         if (block.chainid == 11155111) {
-            activNetworkCofig = getSepoliaEthConfig();
+            activeNetworkCofig = getSepoliaEthConfig();
         } else {
-            activNetworkCofig = getOrCreateAnvilConfig();
+            activeNetworkCofig = getOrCreateAnvilConfig();
         }
     }
 
@@ -39,8 +39,8 @@ contract HelperConfig is Script {
     }
 
     function getOrCreateAnvilConfig() public returns (NetworkConfig memory) {
-        if (activNetworkCofig.wethUsdPriceFeed != address(0)) {
-            return activNetworkCofig;
+        if (activeNetworkCofig.wethUsdPriceFeed != address(0)) {
+            return activeNetworkCofig;
         }
 
         vm.startBroadcast();
@@ -56,7 +56,7 @@ contract HelperConfig is Script {
             wbtcUsdPriceFeed: address(btcUsdPriceFeed),
             weth: address(wethMock),
             wbtc: address(wbtcMock),
-            deployerKey: DEFOULT_ANVIL_KEY
+            deployerKey: DEFAULT_ANVIL_KEY
         });
     }
 }
