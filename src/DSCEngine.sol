@@ -13,6 +13,8 @@ contract DSCEngine is ReentrancyGuard {
     error DSCEngine__TransferFailed();
     error DSCEngine__BreaksHealthFactor(uint256 helthFactor);
     error DSCEngine__MintFailed();
+    error DSCEngine__HealthFactorOk();
+
 
     mapping(address token => address priceFeed) private s_priceFeeds;
     mapping(address user => mapping(address token => uint256 amount)) private s_collateralDeposited;
@@ -26,6 +28,7 @@ contract DSCEngine is ReentrancyGuard {
     uint256 private constant LIQUIDATION_TRESHOLD = 50;
     uint256 private constant LIQUIDATION_PRECISION = 100;
     uint256 private constant MIN_HEALTH_FACTOR = 1e18;
+    uint256 private constant LIQUIDATION_BONUS = 10;
 
     event CollateralDeposited(address indexed user, address indexed token, uint256 indexed amount);
     event CollateralRedeemed(address indexed user, address indexed token, uint256 indexed amount);
@@ -114,7 +117,15 @@ contract DSCEngine is ReentrancyGuard {
         _revertIfHealthFactorIsBroken(msg.sender);
     }
 
-    function liquidate() external {}
+    function liquidate(address collateral, address user, uint256 debtToCover) moreThanZero(debtToCover) nonReentrant external {
+        uint256 startingUserHealthFactor= _helthFactor(user);
+        if(startingUserHealthFactor >= MIN_HEALTH_FACTOR){
+            revert DSCEngine__HealthFactorOk();
+        }
+        uint256 tokenAmountFromDebtCovered = getTokenAmountFromUsd(collateral, debtToCover);
+        uint256 bonusCollateral = (tokenAmountFromDebtCovered * LIQUIDATION_BONUS) / LIQUIDATION_PRECISION;
+        uint256 totalCollateralToRedeem = tokenAmountFromDebtCovered + bonusCollateral;
+    }
 
     function getHelthFactor() external {}
 
@@ -145,6 +156,12 @@ contract DSCEngine is ReentrancyGuard {
 
     /////
     /////
+
+    function getTokenAmountFromUsd(address token, uint256 usdAmountInWei) public view returns(uint256) {
+            AggregatorV3Interface priceFeed = AggregatorV3Interface(s_priceFeeds[token]);
+        (, int256 price,,,) = priceFeed.latestRoundData();
+       return (usdAmountInWei * PRECISION) / (uint256(price) * ADDITIONAL_FEED_PRECISION);
+    }
     function getAccountCollateralValue(address user) public view returns (uint256 totalCollateralValueInUsd) {
         for (uint256 i = 0; i < s_collateralTokens.length; i++) {
             address token = s_collateralTokens[i];
