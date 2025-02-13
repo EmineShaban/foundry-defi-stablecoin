@@ -3,6 +3,7 @@ pragma solidity ^0.8.18;
 
 import {ERC20Burnable, ERC20} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {console} from "forge-std/Script.sol";
 
 contract DecentralizedStableCoin is ERC20Burnable, Ownable {
     error DecentralizedStableCoin__MustBeMoreThanZero();
@@ -13,6 +14,7 @@ contract DecentralizedStableCoin is ERC20Burnable, Ownable {
 
     function burn(uint256 _amount) public override onlyOwner {
         uint256 balance = balanceOf(msg.sender);
+        console.log("balance DSC", balance);
         if (_amount <= 0) {
             revert DecentralizedStableCoin__MustBeMoreThanZero();
         }

@@ -16,7 +16,7 @@ contract Handler is Test {
     ERC20Mock wbtc;
 
     constructor(DSCEngine _engine, DecentralizedStableCoin _dsc) {
-         dsce = _engine;
+        dsce = _engine;
         dsc = _dsc;
         address[] memory collateralTokens = dsce.getCollateralTokens();
         weth = ERC20Mock(collateralTokens[0]);
@@ -33,7 +33,15 @@ contract Handler is Test {
         dsce.depositCollateral(address(collateral), amountCollateral);
         vm.stopBroadcast();
     }
-
+    function redeemCollateral(uint256 collateralSeed, uint256 amountCollateral) public {
+  ERC20Mock collateral = _getCollateralFromSeed(collateralSeed);
+        uint256 maxCollateralToRedeem = dsce.getCollateralBalanceOfUser(address(collateral), msg.sender);
+        amountCollateral = bound(amountCollateral, 0, MAX_DEPOSIT_SIZE);
+        if(amountCollateral == 0){
+            return;
+        }
+        dsce.redeemCollateral(address(collateral), amountCollateral);
+    }
     // Helper Functions
     function _getCollateralFromSeed(uint256 collateralSeed) private view returns (ERC20Mock) {
         if (collateralSeed % 2 == 0) {

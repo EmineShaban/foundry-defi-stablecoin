@@ -156,6 +156,21 @@ contract DSCEngine is ReentrancyGuard {
         }
         i_dsc.burn(amountDscToBurn);
     }
+    function redeemCollateral(
+        address tokenCollateralAddress,
+        uint256 amountCollateral
+    )
+        external
+        moreThanZero(amountCollateral)
+        nonReentrant
+        isAllowedToken(tokenCollateralAddress)
+    {
+        console.log("amountCollateral", amountCollateral);
+                console.log("tokenCollateralAddress", tokenCollateralAddress);
+
+        _redeemCollateral(msg.sender, msg.sender, tokenCollateralAddress, amountCollateral );
+        _revertIfHealthFactorIsBroken(msg.sender);
+    }
 
     function _redeemCollateral(address from, address to, address tokenCollateralAddress, uint256 amountCollateral)
         private
@@ -196,6 +211,7 @@ contract DSCEngine is ReentrancyGuard {
     function getTokenAmountFromUsd(address token, uint256 usdAmountInWei) public view returns (uint256) {
         AggregatorV3Interface priceFeed = AggregatorV3Interface(s_priceFeeds[token]);
         (, int256 price,,,) = priceFeed.latestRoundData();
+        console.log("getTokenAmountFromUsd price",price);
         return ((usdAmountInWei * PRECISION) / (uint256(price) * ADDITIONAL_FEED_PRECISION));
     }
 
@@ -207,15 +223,13 @@ contract DSCEngine is ReentrancyGuard {
         }
         return totalCollateralValueInUsd;
     }
-   function _healthFactor(address user) private view returns (uint256) {
+
+    function _healthFactor(address user) private view returns (uint256) {
         (uint256 totalDscMinted, uint256 collateralValueInUsd) = _getAccountInformation(user);
         return _calculateHealthFactor(totalDscMinted, collateralValueInUsd);
     }
 
-        function _calculateHealthFactor(
-        uint256 totalDscMinted,
-        uint256 collateralValueInUsd
-    )
+    function _calculateHealthFactor(uint256 totalDscMinted, uint256 collateralValueInUsd)
         internal
         pure
         returns (uint256)
@@ -224,12 +238,18 @@ contract DSCEngine is ReentrancyGuard {
         uint256 collateralAdjustedForThreshold = (collateralValueInUsd * LIQUIDATION_TRESHOLD) / LIQUIDATION_PRECISION;
         return (collateralAdjustedForThreshold * PRECISION) / totalDscMinted;
     }
+
     function getUsdValue(address token, uint256 amount) public view returns (uint256) {
         AggregatorV3Interface priceFeed = AggregatorV3Interface(s_priceFeeds[token]);
         (, int256 price,,,) = priceFeed.latestRoundData();
+                console.log("getUsdValue price",price);
+                console.log("getUsdValue amount",amount);
+
         return ((uint256(price) * ADDITIONAL_FEED_PRECISION) * amount) / PRECISION;
     }
-
+   function getCollateralBalanceOfUser(address user, address token) external view returns (uint256) {
+        return s_collateralDeposited[user][token];
+    }
     function getAccountInformation(address user)
         external
         view
